@@ -17,4 +17,10 @@ dist/
 
 # OS files
 .DS_Store
-Thumbs.db
+Thumbs.db 
+node_modules/
+dist/
+.env
+.env.*
+__pycache__/
+*.pyc
