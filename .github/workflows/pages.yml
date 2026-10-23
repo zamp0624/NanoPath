@@ -31,7 +31,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm ci --prefix nanopath-web
+        run: npm install --prefix nanopath-web
 
       - name: Build NanoPath
         run: npm run build --prefix nanopath-web
