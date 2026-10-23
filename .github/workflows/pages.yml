@@ -31,10 +31,12 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --prefix nanopath-web
+        working-directory: ./nanopath-web
+        run: npm install
 
       - name: Build NanoPath
-        run: npm run build --prefix nanopath-web
+        working-directory: ./nanopath-web
+        run: npm run build
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
