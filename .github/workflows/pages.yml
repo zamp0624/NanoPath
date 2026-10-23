@@ -26,6 +26,13 @@ jobs:
         with:
           node-version: 22
 
+      - name: Show repository files
+        run: |
+          pwd
+          ls -la
+          ls -la nanopath-web
+          find . -name package.json
+
       - name: Install dependencies
         run: npm install --prefix ./nanopath-web
 
