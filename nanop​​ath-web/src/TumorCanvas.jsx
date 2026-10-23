@@ -2,18 +2,402 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-function noise(x, y, z) {
-  return (
-    Math.sin(x * 3.1) *
-    Math.cos(y * 2.7) *
-    Math.sin(z * 2.4)
+function createTumor(tumorSize) {
+  const geometry = new THREE.IcosahedronGeometry(0.45, 4);
+
+  const positions = geometry.attributes.position;
+
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const z = positions.getZ(i);
+
+    const variation =
+      1 +
+      Math.sin(x * 5) *
+        Math.cos(y * 4) *
+        Math.sin(z * 5) *
+        0.12;
+
+    positions.setXYZ(
+      i,
+      x * variation,
+      y * variation,
+      z * variation
+    );
+  }
+
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xe87979,
+    roughness: 0.72,
+    metalness: 0.03,
+    emissive: 0x351010,
+  });
+
+  const tumor = new THREE.Mesh(
+    geometry,
+    material
   );
+
+  const size = 0.75 + tumorSize * 0.12;
+
+  tumor.scale.setScalar(size);
+
+  return tumor;
 }
+
+// -----------------------------------------
+// BREAST
+// -----------------------------------------
+
+function createBreast(tumorSize) {
+  const group = new THREE.Group();
+
+  const tissueGeometry =
+    new THREE.SphereGeometry(
+      1.55,
+      48,
+      32
+    );
+
+  const tissueMaterial =
+    new THREE.MeshStandardMaterial({
+      color: 0xd99a9a,
+      roughness: 0.8,
+      metalness: 0,
+    });
+
+  const tissue = new THREE.Mesh(
+    tissueGeometry,
+    tissueMaterial
+  );
+
+  tissue.scale.set(
+    1.15,
+    0.85,
+    0.95
+  );
+
+  group.add(tissue);
+
+  const tumor = createTumor(tumorSize);
+
+  tumor.position.set(
+    0.35,
+    0.05,
+    0.75
+  );
+
+  group.add(tumor);
+
+  return group;
+}
+
+// -----------------------------------------
+// BRAIN
+// -----------------------------------------
+
+function createBrain(tumorSize) {
+  const group = new THREE.Group();
+
+  // -----------------------------------------
+  // BRAIN MATERIAL
+  // -----------------------------------------
+
+  const brainMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc98b9d,
+    roughness: 0.9,
+    metalness: 0,
+  });
+
+  const grooveMaterial = new THREE.MeshStandardMaterial({
+    color: 0x8b5367,
+    roughness: 1,
+    metalness: 0,
+  });
+
+  // -----------------------------------------
+  // LEFT HEMISPHERE
+  // -----------------------------------------
+
+  const leftGeometry = new THREE.SphereGeometry(
+    1.15,
+    48,
+    36
+  );
+
+  const left = new THREE.Mesh(
+    leftGeometry,
+    brainMaterial
+  );
+
+  left.scale.set(1.0, 0.95, 1.12);
+  left.position.x = -0.52;
+
+  group.add(left);
+
+  // -----------------------------------------
+  // RIGHT HEMISPHERE
+  // -----------------------------------------
+
+  const rightGeometry = new THREE.SphereGeometry(
+    1.15,
+    48,
+    36
+  );
+
+  const right = new THREE.Mesh(
+    rightGeometry,
+    brainMaterial
+  );
+
+  right.scale.set(1.0, 0.95, 1.12);
+  right.position.x = 0.52;
+
+  group.add(right);
+
+  // -----------------------------------------
+  // CENTRAL GROOVE
+  // -----------------------------------------
+
+  const centralGrooveGeometry =
+    new THREE.BoxGeometry(
+      0.035,
+      1.65,
+      0.18
+    );
+
+  const centralGroove = new THREE.Mesh(
+    centralGrooveGeometry,
+    grooveMaterial
+  );
+
+  centralGroove.position.set(
+    0,
+    0,
+    1.02
+  );
+
+  group.add(centralGroove);
+
+  // -----------------------------------------
+  // BRAIN FOLDS
+  // -----------------------------------------
+
+  const foldPositions = [
+    [-1.05, 0.55, 0.72, 0.18],
+    [-1.05, 0.15, 0.92, -0.12],
+    [-1.02, -0.25, 0.88, 0.15],
+    [-0.95, -0.62, 0.68, -0.1],
+
+    [-0.65, 0.78, 0.88, -0.15],
+    [-0.55, 0.35, 1.02, 0.12],
+    [-0.58, -0.12, 1.02, -0.15],
+    [-0.62, -0.55, 0.9, 0.12],
+
+    [1.05, 0.55, 0.72, -0.18],
+    [1.05, 0.15, 0.92, 0.12],
+    [1.02, -0.25, 0.88, -0.15],
+    [0.95, -0.62, 0.68, 0.1],
+
+    [0.65, 0.78, 0.88, 0.15],
+    [0.55, 0.35, 1.02, -0.12],
+    [0.58, -0.12, 1.02, 0.15],
+    [0.62, -0.55, 0.9, -0.12],
+  ];
+
+  foldPositions.forEach(
+    ([x, y, z, rotation]) => {
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(
+          x - 0.22,
+          y - 0.08,
+          z
+        ),
+        new THREE.Vector3(
+          x,
+          y + 0.08,
+          z + 0.035
+        ),
+        new THREE.Vector3(
+          x + 0.22,
+          y - 0.03,
+          z
+        ),
+      ]);
+
+      const geometry = new THREE.TubeGeometry(
+        curve,
+        16,
+        0.035,
+        6,
+        false
+      );
+
+      const fold = new THREE.Mesh(
+        geometry,
+        grooveMaterial
+      );
+
+      fold.rotation.z = rotation;
+
+      group.add(fold);
+    }
+  );
+
+  // -----------------------------------------
+  // TUMOR
+  // -----------------------------------------
+
+  const tumor = createTumor(tumorSize);
+
+  tumor.scale.multiplyScalar(0.9);
+
+  tumor.position.set(
+    0.48,
+    0.12,
+    0.85
+  );
+
+  group.add(tumor);
+
+  return group;
+}
+
+// -----------------------------------------
+// COLON
+// -----------------------------------------
+
+function createColon(tumorSize) {
+  const group = new THREE.Group();
+
+  const colonMaterial =
+    new THREE.MeshStandardMaterial({
+      color: 0xc98572,
+      roughness: 0.75,
+      metalness: 0,
+    });
+
+  const curve =
+    new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.1, 1.0, 0),
+      new THREE.Vector3(-1.35, 0.2, 0),
+      new THREE.Vector3(-1.2, -0.9, 0),
+      new THREE.Vector3(0, -1.15, 0),
+      new THREE.Vector3(1.2, -0.9, 0),
+      new THREE.Vector3(1.35, 0.2, 0),
+      new THREE.Vector3(1.1, 1.0, 0),
+    ]);
+
+  const colonGeometry =
+    new THREE.TubeGeometry(
+      curve,
+      80,
+      0.28,
+      16,
+      false
+    );
+
+  const colon = new THREE.Mesh(
+    colonGeometry,
+    colonMaterial
+  );
+
+  group.add(colon);
+
+  const tumor = createTumor(tumorSize);
+
+  tumor.scale.multiplyScalar(0.75);
+
+  tumor.position.set(
+    0.95,
+    -0.85,
+    0.25
+  );
+
+  group.add(tumor);
+
+  return group;
+}
+
+// -----------------------------------------
+// SKIN
+// -----------------------------------------
+
+function createSkin(tumorSize) {
+  const group = new THREE.Group();
+
+  // Outer skin layer
+  const skinGeometry =
+    new THREE.BoxGeometry(
+      3.0,
+      2.3,
+      0.45
+    );
+
+  const skinMaterial =
+    new THREE.MeshStandardMaterial({
+      color: 0xd99a9a,
+      roughness: 0.8,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.82,
+    });
+
+  const skin = new THREE.Mesh(
+    skinGeometry,
+    skinMaterial
+  );
+
+  group.add(skin);
+
+  // Underlying tissue layer
+  const tissueGeometry =
+    new THREE.BoxGeometry(
+      2.8,
+      2.1,
+      0.35
+    );
+
+  const tissueMaterial =
+    new THREE.MeshStandardMaterial({
+      color: 0xe5b4a5,
+      roughness: 0.9,
+    });
+
+  const tissue = new THREE.Mesh(
+    tissueGeometry,
+    tissueMaterial
+  );
+
+  tissue.position.z = -0.35;
+
+  group.add(tissue);
+
+  const tumor = createTumor(tumorSize);
+
+  tumor.scale.multiplyScalar(0.65);
+
+  tumor.position.set(
+    0.35,
+    0.05,
+    0.15
+  );
+
+  group.add(tumor);
+
+  return group;
+}
+
+// -----------------------------------------
+// MAIN COMPONENT
+// -----------------------------------------
 
 export default function TumorCanvas({
   tumorSize = 2.5,
-  nanoparticleCount = 80,
-  showNanoparticles = true,
+  tumorType = "Breast",
 }) {
   const mountRef = useRef(null);
 
@@ -23,251 +407,138 @@ export default function TumorCanvas({
     if (!mount) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070b12);
 
-    const camera = new THREE.PerspectiveCamera(
-      50,
-      mount.clientWidth / mount.clientHeight,
-      0.1,
-      100
-    );
+    scene.background =
+      new THREE.Color(0x070b12);
 
-    camera.position.set(0, 1.2, 5);
+    const camera =
+      new THREE.PerspectiveCamera(
+        50,
+        mount.clientWidth /
+          mount.clientHeight,
+        0.1,
+        100
+      );
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-    });
-
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
-
-    mount.appendChild(renderer.domElement);
-
-    // Camera controls
-    const controls = new OrbitControls(
-      camera,
-      renderer.domElement
-    );
-
-    controls.enableDamping = true;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.5;
-
-    // Lighting
-    scene.add(
-      new THREE.AmbientLight(0x6688aa, 1.2)
-    );
-
-    const light = new THREE.DirectionalLight(
-      0xffffff,
-      2
-    );
-
-    light.position.set(4, 5, 4);
-    scene.add(light);
-
-    const rimLight = new THREE.PointLight(
-      0x00e5ff,
-      2,
-      20
-    );
-
-    rimLight.position.set(-4, 2, -3);
-    scene.add(rimLight);
-
-    // -------------------------
-    // TUMOR
-    // -------------------------
-
-    const geometry = new THREE.IcosahedronGeometry(
-      1.4,
+    camera.position.set(
+      0,
+      0.4,
       5
     );
 
-    const positions = geometry.attributes.position;
-
-    for (let i = 0; i < positions.count; i++) {
-      const x = positions.getX(i);
-      const y = positions.getY(i);
-      const z = positions.getZ(i);
-
-      const n = noise(x, y, z);
-
-      const scale = 1 + n * 0.12;
-
-      positions.setXYZ(
-        i,
-        x * scale,
-        y * scale,
-        z * scale
-      );
-    }
-
-    geometry.computeVertexNormals();
-
-    const tumorMaterial =
-      new THREE.MeshStandardMaterial({
-        color: 0xe87979,
-        roughness: 0.7,
-        metalness: 0.05,
-        emissive: 0x351010,
+    const renderer =
+      new THREE.WebGLRenderer({
+        antialias: true,
       });
 
-    const tumor = new THREE.Mesh(
-      geometry,
-      tumorMaterial
+    renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio,
+        2
+      )
     );
 
-    const scale = 0.7 + tumorSize * 0.18;
+    renderer.setSize(
+      mount.clientWidth,
+      mount.clientHeight
+    );
 
-    tumor.scale.setScalar(scale);
+    mount.appendChild(
+      renderer.domElement
+    );
 
-    scene.add(tumor);
+    // -----------------------------------------
+    // CAMERA
+    // -----------------------------------------
 
-    // -------------------------
-    // BLOOD VESSELS
-    // -------------------------
-
-    const vesselMaterial =
-      new THREE.MeshStandardMaterial({
-        color: 0xff3344,
-        emissive: 0x550000,
-        emissiveIntensity: 0.5,
-      });
-
-    const vesselGroup = new THREE.Group();
-
-    for (let i = 0; i < 35; i++) {
-      const sphere =
-        new THREE.Mesh(
-          new THREE.SphereGeometry(
-            0.035 + Math.random() * 0.025,
-            8,
-            8
-          ),
-          vesselMaterial
-        );
-
-      const theta =
-        Math.random() * Math.PI * 2;
-
-      const phi =
-        Math.acos(
-          2 * Math.random() - 1
-        );
-
-      const radius =
-        1.42 + Math.random() * 0.08;
-
-      sphere.position.set(
-        radius *
-          Math.sin(phi) *
-          Math.cos(theta),
-
-        radius *
-          Math.sin(phi) *
-          Math.sin(theta),
-
-        radius * Math.cos(phi)
+    const controls =
+      new OrbitControls(
+        camera,
+        renderer.domElement
       );
 
-      vesselGroup.add(sphere);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.35;
+
+    // -----------------------------------------
+    // LIGHTING
+    // -----------------------------------------
+
+    const ambientLight =
+      new THREE.AmbientLight(
+        0x6688aa,
+        1.4
+      );
+
+    scene.add(ambientLight);
+
+    const mainLight =
+      new THREE.DirectionalLight(
+        0xffffff,
+        2.2
+      );
+
+    mainLight.position.set(
+      4,
+      5,
+      5
+    );
+
+    scene.add(mainLight);
+
+    const rimLight =
+      new THREE.PointLight(
+        0x00e5ff,
+        2,
+        20
+      );
+
+    rimLight.position.set(
+      -4,
+      2,
+      -3
+    );
+
+    scene.add(rimLight);
+
+    // -----------------------------------------
+    // SELECT MODEL
+    // -----------------------------------------
+
+    let model;
+
+    if (tumorType === "Brain") {
+      model = createBrain(tumorSize);
+    } else if (tumorType === "Colon") {
+      model = createColon(tumorSize);
+    } else if (tumorType === "Skin") {
+      model = createSkin(tumorSize);
+    } else {
+      model = createBreast(tumorSize);
     }
 
-    vesselGroup.scale.setScalar(scale);
+    scene.add(model);
 
-    scene.add(vesselGroup);
+    // -----------------------------------------
+    // CENTER MODEL
+    // -----------------------------------------
 
-    // -------------------------
-    // NANOPARTICLES
-    // -------------------------
+    const box =
+      new THREE.Box3().setFromObject(
+        model
+      );
 
-    const particleGroup =
-      new THREE.Group();
+    const center =
+      box.getCenter(
+        new THREE.Vector3()
+      );
 
-    const particleMaterial =
-      new THREE.MeshStandardMaterial({
-        color: 0x26f5d0,
-        emissive: 0x087a68,
-        emissiveIntensity: 1.5,
-        metalness: 0.3,
-        roughness: 0.25,
-      });
+    model.position.sub(center);
 
-    const particles = [];
-
-    for (
-      let i = 0;
-      i < nanoparticleCount;
-      i++
-    ) {
-      const particle =
-        new THREE.Mesh(
-          new THREE.SphereGeometry(
-            0.035,
-            8,
-            8
-          ),
-          particleMaterial
-        );
-
-      const theta =
-        Math.random() * Math.PI * 2;
-
-      const phi =
-        Math.acos(
-          2 * Math.random() - 1
-        );
-
-      const direction =
-        new THREE.Vector3(
-          Math.sin(phi) *
-            Math.cos(theta),
-
-          Math.sin(phi) *
-            Math.sin(theta),
-
-          Math.cos(phi)
-        );
-
-      const start =
-        direction
-          .clone()
-          .multiplyScalar(2.6);
-
-      const target =
-        direction
-          .clone()
-          .multiplyScalar(
-            0.3 +
-              Math.random() * 0.8
-          );
-
-      particle.position.copy(start);
-
-      particleGroup.add(particle);
-
-      particles.push({
-        mesh: particle,
-        start,
-        target,
-        progress: Math.random(),
-        speed:
-          0.08 +
-          Math.random() * 0.12,
-      });
-    }
-
-    particleGroup.visible =
-      showNanoparticles;
-
-    scene.add(particleGroup);
-
-    // -------------------------
+    // -----------------------------------------
     // ANIMATION
-    // -------------------------
-
-    const clock = new THREE.Clock();
+    // -----------------------------------------
 
     let animationFrame;
 
@@ -277,48 +548,7 @@ export default function TumorCanvas({
           animate
         );
 
-      const delta =
-        clock.getDelta();
-
       controls.update();
-
-      particles.forEach((particle) => {
-        particle.progress +=
-          delta * particle.speed;
-
-        if (
-          particle.progress > 1
-        ) {
-          particle.progress = 0;
-        }
-
-        const t =
-          particle.progress;
-
-        const eased =
-          t < 0.5
-            ? 2 * t * t
-            : 1 -
-              Math.pow(
-                -2 * t + 2,
-                2
-              ) /
-                2;
-
-        particle.mesh.position
-          .copy(
-            particle.start
-              .clone()
-              .lerp(
-                particle.target,
-                eased
-              )
-          );
-
-        particle.mesh.position.multiplyScalar(
-          scale
-        );
-      });
 
       renderer.render(
         scene,
@@ -328,9 +558,9 @@ export default function TumorCanvas({
 
     animate();
 
-    // -------------------------
+    // -----------------------------------------
     // RESIZE
-    // -------------------------
+    // -----------------------------------------
 
     function handleResize() {
       const width =
@@ -338,6 +568,8 @@ export default function TumorCanvas({
 
       const height =
         mount.clientHeight;
+
+      if (!width || !height) return;
 
       camera.aspect =
         width / height;
@@ -355,9 +587,9 @@ export default function TumorCanvas({
       handleResize
     );
 
-    // -------------------------
+    // -----------------------------------------
     // CLEANUP
-    // -------------------------
+    // -----------------------------------------
 
     return () => {
       cancelAnimationFrame(
@@ -371,13 +603,22 @@ export default function TumorCanvas({
 
       controls.dispose();
 
-      geometry.dispose();
+      scene.traverse((object) => {
+        if (object.geometry) {
+          object.geometry.dispose();
+        }
 
-      tumorMaterial.dispose();
-
-      particleMaterial.dispose();
-
-      vesselMaterial.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach(
+              (material) =>
+                material.dispose()
+            );
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
 
       renderer.dispose();
 
@@ -391,11 +632,7 @@ export default function TumorCanvas({
         );
       }
     };
-  }, [
-    tumorSize,
-    nanoparticleCount,
-    showNanoparticles,
-  ]);
+  }, [tumorSize, tumorType]);
 
   return (
     <div

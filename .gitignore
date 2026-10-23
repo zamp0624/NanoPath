@@ -16,3 +16,11 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Keep local 3D model files out of Git
+3D Model/
