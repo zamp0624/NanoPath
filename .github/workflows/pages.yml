@@ -16,11 +16,7 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -31,12 +27,10 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        working-directory: ./nanopath-web
-        run: npm install
+        run: npm install --prefix ./nanopath-web
 
       - name: Build NanoPath
-        working-directory: ./nanopath-web
-        run: npm run build
+        run: npm run build --prefix ./nanopath-web
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -44,8 +38,7 @@ jobs:
       - name: Upload website files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: nanopath-web/dist
+          path: ./nanopath-web/dist
 
       - name: Publish website
-        id: deployment
         uses: actions/deploy-pages@v4
