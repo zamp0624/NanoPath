@@ -17,6 +17,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -30,14 +31,15 @@ jobs:
         run: |
           pwd
           ls -la
-          ls -la nanopath-web
           find . -name package.json
 
       - name: Install dependencies
-        run: npm install --prefix ./nanopath-web
+        run: npm install
+        working-directory: ./nanopath-web
 
       - name: Build NanoPath
-        run: npm run build --prefix ./nanopath-web
+        run: npm run build
+        working-directory: ./nanopath-web
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -45,7 +47,7 @@ jobs:
       - name: Upload website files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./nanopath-web/dist
+          path: nanopath-web/dist
 
       - name: Publish website
         uses: actions/deploy-pages@v4
