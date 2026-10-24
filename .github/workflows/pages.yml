@@ -34,12 +34,10 @@ jobs:
           find . -name package.json
 
       - name: Install dependencies
-        run: npm install
-        working-directory: ./nanopath-web
+        run: cd nanopath-web && npm install
 
       - name: Build NanoPath
-        run: npm run build
-        working-directory: ./nanopath-web
+        run: cd nanopath-web && npm run build
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
