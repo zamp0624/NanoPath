@@ -29,8 +29,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: nanopath-web/package-lock.json
+
+      - name: Show repository files
+        run: |
+          pwd
+          ls -la
+          find . -name package.json
 
       - name: Install dependencies
         run: npm ci
