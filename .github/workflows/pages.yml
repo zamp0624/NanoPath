@@ -11,18 +11,18 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: github-pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -33,21 +33,21 @@ jobs:
           cache-dependency-path: nanopath-web/package-lock.json
 
       - name: Install dependencies
-        working-directory: nanopath-web
         run: npm ci
+        working-directory: ./nanopath-web
 
       - name: Build NanoPath
-        working-directory: nanopath-web
         run: npm run build
+        working-directory: ./nanopath-web
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload website files
+      - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: nanopath-web/dist
+          path: ./nanopath-web/dist
 
-      - name: Publish website
+      - name: Deploy website
         id: deployment
         uses: actions/deploy-pages@v4
